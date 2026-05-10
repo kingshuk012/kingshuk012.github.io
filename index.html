@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fetys — AI Presence for Your Business</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0a0a09;
+  --ink: #f2f0ec;
+  --mid: rgba(242,240,236,0.45);
+  --accent: #c9b97a;
+  --hairline: rgba(242,240,236,0.08);
+  --serif: 'Cormorant', Georgia, serif;
+  --sans: 'DM Sans', sans-serif;
+}
+
+html { font-size: 16px; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  cursor: none;
+}
+
+/* ── Custom cursor ── */
+#cursor {
+  position: fixed;
+  width: 8px; height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: transform 0.08s ease, width 0.3s ease, height 0.3s ease, opacity 0.3s ease;
+  mix-blend-mode: screen;
+}
+#cursor-ring {
+  position: fixed;
+  width: 36px; height: 36px;
+  border: 1px solid rgba(201,185,122,0.35);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9998;
+  transform: translate(-50%, -50%);
+  transition: transform 0.22s ease, width 0.3s ease, height 0.3s ease;
+}
+body:has(a:hover) #cursor, body:has(button:hover) #cursor { width: 14px; height: 14px; }
+body:has(a:hover) #cursor-ring, body:has(button:hover) #cursor-ring { width: 52px; height: 52px; border-color: rgba(201,185,122,0.6); }
+
+/* ── WebGL canvas ── */
+#canvas-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+/* ── Scroll container ── */
+#scroll-container {
+  position: relative;
+  z-index: 10;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.6rem 3.5rem;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.4s, background 0.4s;
+}
+nav.scrolled {
+  background: rgba(10,10,9,0.82);
+  backdrop-filter: blur(18px);
+  border-bottom-color: var(--hairline);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: var(--ink);
+}
+.logo-mark { width: 38px; height: 38px; flex-shrink: 0; }
+.logo-name {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 1.5rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+.nav-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--bg);
+  background: var(--accent);
+  border: none;
+  padding: 0.75rem 1.8rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.25s;
+  font-weight: 500;
+}
+.nav-cta:hover { opacity: 0.8; }
+.nav-cta .pulse {
+  width: 6px; height: 6px;
+  background: var(--bg);
+  border-radius: 50%;
+  animation: pulse-dot 1.6s ease infinite;
+  flex-shrink: 0;
+}
+@keyframes pulse-dot {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.4; transform: scale(0.6); }
+}
+
+/* ── Sections ── */
+.panel {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 8rem 3.5rem;
+}
+
+/* ── HERO ── */
+#hero {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  position: relative;
+}
+
+.hero-eyebrow {
+  font-family: var(--sans);
+  font-size: 0.62rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 2rem;
+  opacity: 0;
+  animation: fadein 1s 0.3s ease forwards;
+}
+
+.hero-h1 {
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: clamp(3rem, 6.5vw, 6.2rem);
+  line-height: 1.06;
+  letter-spacing: -0.01em;
+  margin-bottom: 2rem;
+  opacity: 0;
+  animation: riseup 1.2s 0.5s cubic-bezier(0.16,1,0.3,1) forwards;
+  max-width: 820px;
+}
+.hero-h1 em { font-style: italic; color: var(--accent); }
+
+.hero-sub {
+  font-size: 0.82rem;
+  line-height: 1.9;
+  color: var(--mid);
+  max-width: 360px;
+  margin: 0 auto 3.5rem;
+  letter-spacing: 0.03em;
+  opacity: 0;
+  animation: fadein 1s 0.85s ease forwards;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 1.2rem;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  animation: fadein 1s 1.05s ease forwards;
+  flex-wrap: wrap;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--bg);
+  background: var(--accent);
+  border: none;
+  padding: 1rem 2.4rem;
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 500;
+  transition: opacity 0.25s, transform 0.25s;
+}
+.btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
+
+.btn-ghost {
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(242,240,236,0.3);
+  padding-bottom: 2px;
+  transition: border-color 0.25s;
+  opacity: 0.7;
+}
+.btn-ghost:hover { border-color: var(--ink); opacity: 1; }
+
+.hero-scroll-hint {
+  position: absolute;
+  bottom: 2.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.58rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--mid);
+  opacity: 0;
+  animation: fadein 1s 1.5s ease forwards;
+}
+.scroll-line {
+  width: 1px;
+  height: 40px;
+  background: linear-gradient(to bottom, var(--accent), transparent);
+  animation: scroll-drop 2s ease infinite;
+}
+@keyframes scroll-drop {
+  0%   { transform: scaleY(0); transform-origin: top; opacity: 0; }
+  40%  { transform: scaleY(1); transform-origin: top; opacity: 1; }
+  80%  { transform: scaleY(1); transform-origin: bottom; opacity: 1; }
+  100% { transform: scaleY(0); transform-origin: bottom; opacity: 0; }
+}
+
+/* ── Divider ── */
+.rule {
+  width: 100%;
+  height: 1px;
+  background: var(--hairline);
+  position: relative;
+  z-index: 10;
+  margin: 0 3.5rem;
+  width: calc(100% - 7rem);
+}
+
+/* ── SERVICES ── */
+#services {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.section-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 4rem;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.section-label.on { opacity: 1; transform: none; }
+
+.services-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border-top: 1px solid var(--hairline);
+}
+.svc {
+  padding: 3rem 0 3rem 0;
+  border-bottom: 1px solid var(--hairline);
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.9s ease, transform 0.9s ease;
+}
+.svc:nth-child(odd) { padding-right: 4rem; border-right: 1px solid var(--hairline); }
+.svc:nth-child(even) { padding-left: 4rem; }
+.svc.on { opacity: 1; transform: none; }
+.svc:nth-child(2) { transition-delay: 0.12s; }
+.svc:nth-child(3) { transition-delay: 0.06s; }
+.svc:nth-child(4) { transition-delay: 0.18s; }
+
+.svc-num {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 0.75rem;
+  color: var(--accent);
+  margin-bottom: 1.6rem;
+}
+.svc-title {
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: clamp(1.5rem, 2.2vw, 2rem);
+  line-height: 1.2;
+  margin-bottom: 1.2rem;
+  letter-spacing: -0.01em;
+}
+.svc-body {
+  font-size: 0.78rem;
+  line-height: 1.85;
+  color: var(--mid);
+  max-width: 320px;
+  font-weight: 300;
+}
+
+/* ── OFFER ── */
+#offer {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8rem;
+  align-items: center;
+}
+.offer-left {
+  opacity: 0;
+  transform: translateX(-24px);
+  transition: opacity 1s ease, transform 1s ease;
+}
+.offer-left.on { opacity: 1; transform: none; }
+.offer-right {
+  opacity: 0;
+  transform: translateX(24px);
+  transition: opacity 1s ease, transform 1s ease;
+  transition-delay: 0.15s;
+}
+.offer-right.on { opacity: 1; transform: none; }
+
+.offer-num-big {
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: clamp(8rem, 16vw, 14rem);
+  line-height: 0.85;
+  color: var(--accent);
+  opacity: 0.12;
+  letter-spacing: -0.06em;
+  margin-bottom: -1rem;
+  display: block;
+}
+.offer-title {
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: clamp(2.2rem, 3.5vw, 3.2rem);
+  line-height: 1.15;
+  margin-bottom: 1.6rem;
+  letter-spacing: -0.01em;
+}
+.offer-title em { font-style: italic; color: var(--accent); }
+.offer-body {
+  font-size: 0.8rem;
+  line-height: 1.85;
+  color: var(--mid);
+  margin-bottom: 2.5rem;
+  font-weight: 300;
+}
+.offer-spots {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+  padding: 1.2rem 1.5rem;
+  border: 1px solid rgba(201,185,122,0.2);
+  background: rgba(201,185,122,0.04);
+}
+.offer-spots-count {
+  font-family: var(--serif);
+  font-size: 2.5rem;
+  font-weight: 300;
+  color: var(--accent);
+  line-height: 1;
+}
+.offer-spots-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  color: var(--mid);
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
+/* Offer visual */
+.offer-visual {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+.offer-card {
+  padding: 1.6rem 2rem;
+  border: 1px solid var(--hairline);
+  background: rgba(242,240,236,0.02);
+  transition: border-color 0.3s, background 0.3s;
+}
+.offer-card:hover {
+  border-color: rgba(201,185,122,0.25);
+  background: rgba(201,185,122,0.03);
+}
+.offer-card-label {
+  font-size: 0.58rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.7rem;
+}
+.offer-card-text {
+  font-size: 0.82rem;
+  color: var(--mid);
+  line-height: 1.7;
+  font-weight: 300;
+}
+
+/* ── PROCESS ── */
+#process { max-width: 1100px; margin: 0 auto; }
+.steps { margin-top: 0; }
+.step {
+  display: grid;
+  grid-template-columns: 4rem 1fr;
+  gap: 3rem;
+  padding: 2.4rem 0;
+  border-bottom: 1px solid var(--hairline);
+  align-items: start;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.step:first-child { border-top: 1px solid var(--hairline); }
+.step.on { opacity: 1; transform: none; }
+
+.step-n {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 0.75rem;
+  color: var(--accent);
+  padding-top: 0.25rem;
+}
+.step-title {
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: 1.3rem;
+  margin-bottom: 0.6rem;
+  letter-spacing: -0.01em;
+}
+.step-body {
+  font-size: 0.78rem;
+  line-height: 1.85;
+  color: var(--mid);
+  font-weight: 300;
+}
+
+/* ── CONTACT ── */
+#contact {
+  max-width: 700px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.contact-header {
+  margin-bottom: 4rem;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.9s ease, transform 0.9s ease;
+}
+.contact-header.on { opacity: 1; transform: none; }
+
+.form-title {
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: clamp(2rem, 3.5vw, 3rem);
+  line-height: 1.15;
+  margin-bottom: 0.8rem;
+}
+.form-title em { font-style: italic; color: var(--accent); }
+.form-note {
+  font-size: 0.76rem;
+  line-height: 1.8;
+  color: var(--mid);
+  font-weight: 300;
+}
+
+.form-wrap {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.9s ease, transform 0.9s ease;
+  transition-delay: 0.15s;
+}
+.form-wrap.on { opacity: 1; transform: none; }
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 2rem;
+}
+.field label {
+  font-size: 0.58rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.field input,
+.field textarea,
+.field select {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(242,240,236,0.12);
+  padding: 0.75rem 0;
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  color: var(--ink);
+  outline: none;
+  width: 100%;
+  transition: border-color 0.25s;
+  border-radius: 0;
+  -webkit-appearance: none;
+  font-weight: 300;
+}
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  border-bottom-color: var(--accent);
+}
+.field input::placeholder,
+.field textarea::placeholder { color: rgba(242,240,236,0.2); font-size: 0.82rem; }
+.field textarea { resize: none; min-height: 80px; line-height: 1.7; }
+.field select {
+  cursor: pointer;
+  color: rgba(242,240,236,0.6);
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23c9b97a' stroke-width='1'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 4px center;
+  padding-right: 1.5rem;
+}
+.field select option { background: #111; color: var(--ink); }
+.field select.has-value { color: var(--ink); }
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2.5rem;
+}
+
+.form-submit {
+  margin-top: 3rem;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+.form-privacy {
+  font-size: 0.63rem;
+  color: var(--mid);
+  line-height: 1.7;
+  max-width: 200px;
+  font-weight: 300;
+}
+
+/* success */
+.form-success {
+  display: none;
+  text-align: center;
+  padding: 4rem 0;
+}
+.form-success.show { display: block; }
+.form-wrap.sent { display: none; }
+.success-icon { width: 44px; height: 44px; margin: 0 auto 1.8rem; }
+.success-title {
+  font-family: var(--serif);
+  font-size: 2rem;
+  font-weight: 300;
+  margin-bottom: 0.75rem;
+}
+.success-body { font-size: 0.8rem; line-height: 1.8; color: var(--mid); }
+
+#formError {
+  display: none;
+  margin-top: 1rem;
+  font-size: 0.72rem;
+  color: #d4826e;
+  letter-spacing: 0.06em;
+}
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--hairline);
+  padding: 2rem 3.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  z-index: 10;
+}
+.foot-copy {
+  font-size: 0.63rem;
+  letter-spacing: 0.14em;
+  color: var(--mid);
+  text-transform: uppercase;
+}
+
+/* ── Animations ── */
+@keyframes fadein { to { opacity: 1; } }
+@keyframes riseup {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  nav { padding: 1.3rem 1.5rem; }
+  .panel { padding: 6rem 1.5rem; }
+  .hero-h1 { font-size: clamp(2.4rem, 9vw, 3.5rem); }
+  .services-grid { grid-template-columns: 1fr; }
+  .svc:nth-child(odd) { padding-right: 0; border-right: none; }
+  .svc:nth-child(even) { padding-left: 0; }
+  #offer { grid-template-columns: 1fr; gap: 3rem; }
+  .field-row { grid-template-columns: 1fr; gap: 0; }
+  footer { flex-direction: column; gap: 0.5rem; text-align: center; padding: 1.5rem; }
+  .rule { margin: 0 1.5rem; width: calc(100% - 3rem); }
+  #cursor, #cursor-ring { display: none; }
+  body { cursor: auto; }
+}
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<!-- WebGL Canvas -->
+<canvas id="canvas-bg"></canvas>
+
+<div id="scroll-container">
+
+  <!-- NAV -->
+  <nav id="navbar">
+    <a class="logo" href="#">
+      <svg class="logo-mark" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="19,3 35,33 3,33" stroke="#c9b97a" stroke-width="1.4" fill="none" stroke-linejoin="round"/>
+        <line x1="19" y1="3" x2="19" y2="33" stroke="#c9b97a" stroke-width="1.4" opacity="0.3"/>
+        <line x1="3" y1="33" x2="27" y2="18" stroke="#c9b97a" stroke-width="1.4" opacity="0.3"/>
+      </svg>
+      <div class="logo-name">Fetys</div>
+    </a>
+    <a href="#" onclick="event.preventDefault();scrollToContact()" class="nav-cta">
+      <span class="pulse"></span>
+      10 Free Spots — Claim Yours
+    </a>
+  </nav>
+
+  <!-- HERO -->
+  <section id="hero" class="panel">
+    <div>
+      <p class="hero-eyebrow">AI Presence Management</p>
+      <h1 class="hero-h1">
+        When someone asks<br>
+        <em>ChatGPT about you,</em><br>
+        what does it say?
+      </h1>
+      <p class="hero-sub">
+        We make sure the answer is good.<br>That's the whole job.
+      </p>
+      <div class="hero-actions">
+        <a href="#" onclick="event.preventDefault();scrollToContact()" class="btn-primary">
+          <span class="pulse"></span>
+          Get in for free — 10 spots
+        </a>
+        <a href="#services" class="btn-ghost">See what we do</a>
+      </div>
+    </div>
+    <div class="hero-scroll-hint">
+      <div class="scroll-line"></div>
+      Scroll
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <!-- SERVICES -->
+  <section id="services" class="panel" style="display:block; padding-top:6rem; padding-bottom:6rem;">
+    <div id="services-inner">
+      <p class="section-label">What we actually do</p>
+      <div class="services-grid">
+        <div class="svc">
+          <div class="svc-num">i</div>
+          <h2 class="svc-title">Getting AI to<br>know you exist</h2>
+          <p class="svc-body">ChatGPT, Gemini, Perplexity — they all form opinions about businesses. We make sure what they say about you is accurate, complete, and genuinely useful to the people asking. Think of it as reputation management, but for machines.</p>
+        </div>
+        <div class="svc">
+          <div class="svc-num">ii</div>
+          <h2 class="svc-title">Showing up when<br>AI recommends things</h2>
+          <p class="svc-body">More and more people ask AI "who's the best [thing you do] in [place]?" instead of Googling. We do the unglamorous work of making sure you're in that answer — not a competitor who got there first.</p>
+        </div>
+        <div class="svc">
+          <div class="svc-num">iii</div>
+          <h2 class="svc-title">Fixing what AI<br>gets wrong</h2>
+          <p class="svc-body">AI models often have outdated, incomplete, or simply wrong information about your business. We audit, correct, and reinforce the signals that language models rely on to form their answers.</p>
+        </div>
+        <div class="svc">
+          <div class="svc-num">iv</div>
+          <h2 class="svc-title">Staying ahead as<br>AI keeps changing</h2>
+          <p class="svc-body">Models update. New AI platforms emerge. What works today can shift quietly. We monitor your AI presence continuously and adapt — so you don't have to think about it.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <!-- OFFER -->
+  <section id="offer" class="panel">
+    <div id="offer-left" class="offer-left">
+      <span class="offer-num-big">10</span>
+      <h2 class="offer-title">We'll do it<br><em>free for the</em><br>first 10 people.</h2>
+      <p class="offer-body">We're new. We don't have a long client list to point at yet. So instead of asking you to take that on faith, we'd rather just do the work and prove it. Everything we offer, at no cost, for 10 businesses willing to give us a shot.</p>
+      <div class="offer-spots">
+        <div class="offer-spots-count">10</div>
+        <div class="offer-spots-label">Free spots<br>available now</div>
+      </div>
+      <a href="#" onclick="event.preventDefault();scrollToContact()" class="btn-primary">I'd like to be one of those 10</a>
+    </div>
+    <div id="offer-right" class="offer-right">
+      <div class="offer-visual">
+        <div class="offer-card">
+          <div class="offer-card-label">What you get</div>
+          <div class="offer-card-text">Full AI presence audit across ChatGPT, Claude, Gemini & Perplexity — we show you exactly what they say about you today.</div>
+        </div>
+        <div class="offer-card">
+          <div class="offer-card-label">Then we fix it</div>
+          <div class="offer-card-text">We write and distribute content that language models actually understand and remember — making sure the right story gets told.</div>
+        </div>
+        <div class="offer-card">
+          <div class="offer-card-label">We keep watching</div>
+          <div class="offer-card-text">Monthly monitoring and adjustments. AI drifts — we catch it before it becomes a problem. You get a clear report each time.</div>
+        </div>
+        <div class="offer-card">
+          <div class="offer-card-label">No catch</div>
+          <div class="offer-card-text">Genuinely free. No credit card. No gotcha. We're proving ourselves — and hoping you'll want to continue once you see results.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <!-- PROCESS -->
+  <section id="process" class="panel" style="display:block; padding-top:6rem; padding-bottom:6rem;">
+    <p class="section-label">How it goes</p>
+    <div class="steps">
+      <div class="step">
+        <span class="step-n">01</span>
+        <div>
+          <div class="step-title">We look up what AI already says about you</div>
+          <p class="step-body">Before touching anything, we ask ChatGPT, Claude, Gemini, and Perplexity about your business. A lot of the time what comes back is wrong, thin, or just missing. That's the gap we're filling.</p>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-n">02</span>
+        <div>
+          <div class="step-title">We write content that AI actually understands</div>
+          <p class="step-body">Not blog posts for the sake of it. Specific, well-structured writing about who you are and what you do — the kind that language models can read and remember correctly. It's a different craft to normal copywriting.</p>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-n">03</span>
+        <div>
+          <div class="step-title">We get it in the right places</div>
+          <p class="step-body">We distribute that content across the sources AI tools actually pull from when they answer questions. This is where the unglamorous work happens — and where most people give up.</p>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-n">04</span>
+        <div>
+          <div class="step-title">We check, adjust, repeat</div>
+          <p class="step-body">AI models update. What worked last month might slip. We keep an eye on how you're being represented and tweak things when they drift. You won't have to think about it.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <!-- CONTACT FORM -->
+  <section id="contact" class="panel" style="display:block; padding-top:7rem; padding-bottom:7rem;">
+    <div id="contact-inner">
+      <div class="contact-header" id="contactHeader">
+        <p class="section-label" style="opacity:1; transform:none;">Get in touch</p>
+        <h2 class="form-title">Tell us about<br><em>your business.</em></h2>
+        <p class="form-note">We read every message personally and reply within 48 hours. No automated replies, no sales team — just us.</p>
+      </div>
+
+      <div class="form-success" id="formSuccess">
+        <svg class="success-icon" viewBox="0 0 44 44" fill="none">
+          <circle cx="22" cy="22" r="21" stroke="#c9b97a" stroke-width="1"/>
+          <polyline points="13,22 20,29 31,15" stroke="#c9b97a" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="success-title">You're on the list.</div>
+        <p class="success-body">We'll be in touch within a couple of days.<br>Thanks for giving us a shot.</p>
+      </div>
+
+      <div class="form-wrap" id="formWrap">
+        <div class="field">
+          <label for="fname">Your name</label>
+          <input type="text" id="fname" placeholder="Jane Smith" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="femail">Email address</label>
+          <input type="email" id="femail" placeholder="jane@company.com">
+        </div>
+        <div class="field">
+          <label for="frequirements">What do you need?</label>
+          <textarea id="frequirements" placeholder="Tell us about your business and what you want AI to say about you. E.g. When someone asks ChatGPT for a good accountant in Bangalore, I want to come up — right now it doesn’t mention us at all…" style="min-height: 130px"></textarea>
+        </div>
+        <div class="form-submit">
+          <button class="btn-primary" id="submitBtn" onclick="handleSubmit()">Send it over</button>
+          <p class="form-privacy">We won’t share your details or add you to a mailing list.</p>
+        </div>
+        <p id="formError">Please fill in your name, email, and requirements before sending.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <span class="foot-copy">© 2025 Fetys</span>
+    <span class="foot-copy">AI Presence Management</span>
+    <span class="foot-copy">We help businesses show up in AI</span>
+  </footer>
+
+</div><!-- /scroll-container -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ─────────────────────────────────────────────
+   CURSOR
+───────────────────────────────────────────── */
+const cur = document.getElementById('cursor');
+const ring = document.getElementById('cursor-ring');
+let cx = -100, cy = -100, rx = -100, ry = -100;
+
+document.addEventListener('mousemove', e => {
+  cx = e.clientX; cy = e.clientY;
+});
+
+function animCursor() {
+  rx += (cx - rx) * 0.18;
+  ry += (cy - ry) * 0.18;
+  if (cur) { cur.style.left = cx + 'px'; cur.style.top = cy + 'px'; }
+  if (ring) { ring.style.left = rx + 'px'; ring.style.top = ry + 'px'; }
+  requestAnimationFrame(animCursor);
+}
+animCursor();
+
+/* ─────────────────────────────────────────────
+   THREE.JS — scroll-driven 3D scene
+───────────────────────────────────────────── */
+const canvas = document.getElementById('canvas-bg');
+const W = () => window.innerWidth;
+const H = () => window.innerHeight;
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(W(), H());
+renderer.setClearColor(0x000000, 0);
+
+const scene = new THREE.Scene();
+const cam = new THREE.PerspectiveCamera(50, W() / H(), 0.1, 100);
+cam.position.set(0, 0, 5);
+
+// ── Object 1: Large icosahedron wireframe (hero)
+const icoGeo = new THREE.IcosahedronGeometry(1.6, 2);
+const icoEdges = new THREE.EdgesGeometry(icoGeo);
+const icoMat = new THREE.LineBasicMaterial({ color: 0xc9b97a, transparent: true, opacity: 0.12 });
+const ico = new THREE.LineSegments(icoEdges, icoMat);
+scene.add(ico);
+
+// ── Object 2: Inner icosahedron
+const ico2Geo = new THREE.IcosahedronGeometry(0.88, 1);
+const ico2Edges = new THREE.EdgesGeometry(ico2Geo);
+const ico2Mat = new THREE.LineBasicMaterial({ color: 0xc9b97a, transparent: true, opacity: 0.18 });
+const ico2 = new THREE.LineSegments(ico2Edges, ico2Mat);
+scene.add(ico2);
+
+// ── Object 3: Torus knot — appears mid-scroll
+const torusGeo = new THREE.TorusKnotGeometry(1.1, 0.28, 96, 12);
+const torusEdges = new THREE.EdgesGeometry(torusGeo);
+const torusMat = new THREE.LineBasicMaterial({ color: 0xc9b97a, transparent: true, opacity: 0 });
+const torus = new THREE.LineSegments(torusEdges, torusMat);
+torus.position.x = 2.5;
+scene.add(torus);
+
+// ── Object 4: Octahedron — appears late scroll
+const octaGeo = new THREE.OctahedronGeometry(1.2, 2);
+const octaEdges = new THREE.EdgesGeometry(octaGeo);
+const octaMat = new THREE.LineBasicMaterial({ color: 0xc9b97a, transparent: true, opacity: 0 });
+const octa = new THREE.LineSegments(octaEdges, octaMat);
+octa.position.x = -2.2;
+scene.add(octa);
+
+// ── Particles
+const particleCount = 280;
+const positions = new Float32Array(particleCount * 3);
+for (let i = 0; i < particleCount; i++) {
+  positions[i * 3]     = (Math.random() - 0.5) * 18;
+  positions[i * 3 + 1] = (Math.random() - 0.5) * 18;
+  positions[i * 3 + 2] = (Math.random() - 0.5) * 12;
+}
+const partGeo = new THREE.BufferGeometry();
+partGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+const partMat = new THREE.PointsMaterial({ color: 0xc9b97a, size: 0.028, transparent: true, opacity: 0.35 });
+const particles = new THREE.Points(partGeo, partMat);
+scene.add(particles);
+
+// ── Mouse
+let mx = 0, my = 0;
+document.addEventListener('mousemove', e => {
+  mx = (e.clientX / W() - 0.5) * 2;
+  my = -(e.clientY / H() - 0.5) * 2;
+});
+
+window.addEventListener('resize', () => {
+  cam.aspect = W() / H();
+  cam.updateProjectionMatrix();
+  renderer.setSize(W(), H());
+});
+
+// ── Lerp helper
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+let t = 0;
+function tick() {
+  requestAnimationFrame(tick);
+  t += 0.004;
+
+  const scrollY = window.scrollY;
+  const docH = document.body.scrollHeight - window.innerHeight;
+  const scrollPct = Math.min(scrollY / (docH || 1), 1);
+
+  // ── SCROLL PROGRESS sections
+  // 0–0.2: hero
+  // 0.2–0.5: services/offer  (torus emerges)
+  // 0.5–0.8: process        (octa emerges)
+  // 0.8–1.0: contact
+
+  const p1 = Math.min(scrollPct / 0.25, 1);         // hero → services
+  const p2 = Math.max(0, Math.min((scrollPct - 0.25) / 0.25, 1)); // services → offer
+  const p3 = Math.max(0, Math.min((scrollPct - 0.5) / 0.3, 1));   // offer → process
+  const p4 = Math.max(0, Math.min((scrollPct - 0.75) / 0.25, 1)); // process → contact
+
+  // ICO: shrinks and moves right as scroll increases
+  ico.rotation.x = t * 0.22 + my * 0.05;
+  ico.rotation.y = t * 0.14 + mx * 0.05;
+  ico2.rotation.x = -t * 0.18 + my * 0.03;
+  ico2.rotation.y = t * 0.24 + mx * 0.04;
+
+  // Scale down icosahedron as we scroll
+  const icoScale = lerp(1, 0.3, p1 * 0.7 + p2 * 0.3);
+  ico.scale.setScalar(icoScale);
+  ico2.scale.setScalar(icoScale * 0.9);
+  icoMat.opacity = lerp(0.12, 0.04, p2);
+  ico2Mat.opacity = lerp(0.18, 0.06, p2);
+
+  // Camera drift on scroll
+  cam.position.x = lerp(0, -1.2, p1) + mx * 0.08;
+  cam.position.y = lerp(0, 0.4, p1) + my * 0.06;
+  cam.position.z = lerp(5, 4.5, p2);
+
+  // TORUS: fades in on section 2
+  torus.rotation.x = t * 0.16 + my * 0.04;
+  torus.rotation.y = t * 0.28 + mx * 0.05;
+  torusMat.opacity = lerp(0, 0.14, p2) * lerp(1, 0.1, p4);
+  torus.scale.setScalar(lerp(0.6, 1, p2));
+  torus.position.x = lerp(3.5, 1.8, p2);
+
+  // OCTA: fades in on section 3
+  octa.rotation.x = t * 0.2 + my * 0.05;
+  octa.rotation.y = t * 0.12 + mx * 0.06;
+  octaMat.opacity = lerp(0, 0.13, p3) * lerp(1, 0.15, p4);
+  octa.scale.setScalar(lerp(0.5, 1, p3));
+  octa.position.x = lerp(-3.5, -1.8, p3);
+
+  // Particles subtle drift
+  particles.rotation.y = t * 0.015 + mx * 0.01;
+  particles.rotation.x = t * 0.008 + my * 0.008;
+
+  renderer.render(scene, cam);
+}
+tick();
+
+/* ─────────────────────────────────────────────
+   NAV scrolled state
+───────────────────────────────────────────── */
+const navbar = document.getElementById('navbar');
+window.addEventListener('scroll', () => {
+  navbar.classList.toggle('scrolled', window.scrollY > 60);
+}, { passive: true });
+
+/* ─────────────────────────────────────────────
+   INTERSECTION OBSERVER reveal
+───────────────────────────────────────────── */
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('on');
+      // stagger children if parent is services-grid
+    }
+  });
+}, { threshold: 0.08 });
+
+// All reveal targets
+document.querySelectorAll('.section-label, .svc, .step, .offer-left, .offer-right, .contact-header, .form-wrap').forEach(el => io.observe(el));
+
+/* stagger steps */
+document.querySelectorAll('.step').forEach((el, i) => {
+  el.style.transitionDelay = (i * 0.1) + 's';
+});
+
+/* ─────────────────────────────────────────────
+   FORM
+───────────────────────────────────────────── */
+function scrollToContact() {
+  const el = document.getElementById('contact');
+  if (el) {
+    const top = el.getBoundingClientRect().top + window.scrollY - 80;
+    window.scrollTo({ top, behavior: 'smooth' });
+  }
+}
+
+function handleSubmit() {
+  const name    = document.getElementById('fname').value.trim();
+  const email   = document.getElementById('femail').value.trim();
+  const reqs    = document.getElementById('frequirements').value.trim();
+  const err     = document.getElementById('formError');
+
+  if (!name || !email || !reqs) {
+    err.style.display = 'block';
+    return;
+  }
+  err.style.display = 'none';
+
+  const btn = document.getElementById('submitBtn');
+  btn.textContent = 'Sending…';
+  btn.disabled = true;
+
+  setTimeout(() => {
+    document.getElementById('formWrap').classList.add('sent');
+    document.getElementById('formSuccess').classList.add('show');
+    window.scrollTo({ top: document.getElementById('contact').offsetTop - 80, behavior: 'smooth' });
+  }, 900);
+}
+</script>
+</body>
+</html>
